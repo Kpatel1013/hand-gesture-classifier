@@ -83,3 +83,22 @@ def finger_flags(lm, margin=0.02):
         dp = _dist(pip, wrist)
         out.append(1 if dt > dp + margin else 0)
     return tuple(out)
+
+
+def reference_gesture_from_flags(flags):
+    t, i, m, r, p = flags
+    if t and not i and not m and not r and not p:
+        return G_TO_A["THUMBS_UP"]
+    if not t and i and not m and not r and not p:
+        return G_TO_A["POINT"]
+    if not t and i and m and not r and not p:
+        return G_TO_A["PEACE"]
+    if sum(flags) == 0:
+        return G_TO_A["FIST"]
+    if sum(flags) >= 4:
+        return G_TO_A["OPEN"]
+    return G_TO_A["NONE"]
+
+
+def state_from_flags(flags):
+    return int("".join(str(b) for b in flags), 2)
