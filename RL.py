@@ -144,7 +144,7 @@ def draw_overlay(frame, ref_name: str):
     )
 
 
-def run_train_rl(camera_id=0, train_steps=2_000, epsilon=0.2):
+def run_train_rl(camera_id=0, train_steps=2_000, epsilon=0.2, save_path: Optional[Path] = None):
     agent = QGestureAgent(epsilon=epsilon)
     cap = cv2.VideoCapture(camera_id)
     landmarker = make_landmarker()
@@ -199,4 +199,31 @@ def run_train_rl(camera_id=0, train_steps=2_000, epsilon=0.2):
         cap.release()
         cv2.destroyAllWindows()
         landmarker.close()
+    if save_path:
+        agent.save(save_path)
+        print(f"Saved Q-table to {save_path}")
     return agent
+
+
+def main():
+    p = argparse.ArgumentParser(description="Train Q-gesture agent from webcam.")
+    p.add_argument("--camera", type=int, default=0, help="OpenCV camera index")
+    p.add_argument("--train-steps", type=int, default=2500, help="RL update steps")
+    p.add_argument("--epsilon", type=float, default=0.2, help="exploration during training")
+    p.add_argument(
+        "--save",
+        type=Path,
+        default=_project_dir() / "q_gesture.npz",
+        help="path to save Q-table",
+    )
+    args = p.parse_args()
+    run_train_rl(
+        camera_id=args.camera,
+        train_steps=args.train_steps,
+        epsilon=args.epsilon,
+        save_path=args.save,
+    )
+
+
+if __name__ == "__main__":
+    main()
