@@ -123,3 +123,51 @@ class QGestureAgent:
 
     def policy_action(self, state):
         return int(np.argmax(self.q[state]))
+
+    def save(self, path: Path) -> None:
+        np.savez(path, q=self.q, lr=self.lr, gamma=self.gamma, epsilon=self.epsilon)
+
+
+def run_train_rl(camera_id=0, train_steps=2_000, epsilon=0.2):
+    agent = QGestureAgent(epsilon=epsilon)
+    cap = cv2.VideoCapture(camera_id)
+    landmarker = make_landmarker()
+    prev_s = None
+    prev_a = None
+    prev_ref_id = None
+    step = 0
+    t_ms = 0
+    try:
+        while cap.isOpened() and step < train_steps:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            t_ms += 33
+            result = detect_hands(landmarker, frame, t_ms)
+
+            s = 0
+            flags = (0, 0, 0, 0, 0)
+            ref_id = G_TO_A["NONE"]
+
+            if result.hand_landmarks:
+                lm = result.hand_landmarks[0]
+                draw_hands_on_frame(frame, [lm])
+                flags = finger_flags(lm)
+                s = state_from_flags(flags)
+                ref_id = reference_gesture_from_flags(flags)
+
+            a = agent.pick_action(s, train=True)
+            if prev_s is not None:
+                r = 1.0 if prev_a == prev_ref_id else -0.05
+                agent.step(prev_s, prev_a, r, s)
+
+            prev_s, prev_a, prev_ref_id = s, a, ref_id
+            cv2.imshow("RL hand gestures (q to quit)", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+            step += 1
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+        landmarker.close()
+    return agent
