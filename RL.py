@@ -102,3 +102,24 @@ def reference_gesture_from_flags(flags):
 
 def state_from_flags(flags):
     return int("".join(str(b) for b in flags), 2)
+
+
+class QGestureAgent:
+    def __init__(self, n_states=32, n_actions=N_ACTIONS, lr=0.35, gamma=0.92, epsilon=0.25):
+        self.lr = lr
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.q = np.zeros((n_states, n_actions), dtype=np.float64)
+
+    def pick_action(self, state, train=True):
+        if train and np.random.random() < self.epsilon:
+            return np.random.randint(0, self.q.shape[1])
+        return int(np.argmax(self.q[state]))
+
+    def step(self, s, a, r, s_next):
+        q_sa = self.q[s, a]
+        backup = r + self.gamma * float(np.max(self.q[s_next]))
+        self.q[s, a] = q_sa + self.lr * (backup - q_sa)
+
+    def policy_action(self, state):
+        return int(np.argmax(self.q[state]))
