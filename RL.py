@@ -38,3 +38,16 @@ def detect_hands(landmarker: HandLandmarker, frame_bgr: np.ndarray, timestamp_ms
     rgb = np.ascontiguousarray(rgb)
     mp_image = Image(image_format=ImageFormat.SRGB, data=rgb)
     return landmarker.detect_for_video(mp_image, timestamp_ms)
+
+
+def draw_hands_on_frame(frame_bgr: np.ndarray, hand_landmarks_list: list, point_color: tuple[int, int, int] = (255, 200, 0)):
+    spec_pt = drawing_utils.DrawingSpec(color=point_color, thickness=2, circle_radius=2)
+    spec_ln = drawing_utils.DrawingSpec(color=(255, 255, 255), thickness=2)
+    for lm in hand_landmarks_list:
+        drawing_utils.draw_landmarks(
+            frame_bgr,
+            lm,
+            HandLandmarksConnections.HAND_CONNECTIONS,
+            landmark_drawing_spec=spec_pt,
+            connection_drawing_spec=spec_ln,
+        )
