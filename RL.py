@@ -128,6 +128,22 @@ class QGestureAgent:
         np.savez(path, q=self.q, lr=self.lr, gamma=self.gamma, epsilon=self.epsilon)
 
 
+def draw_overlay(frame, ref_name: str):
+    txt = ref_name
+    font_scale = 0.55 * 5
+    thickness = 10
+    cv2.putText(
+        frame,
+        txt,
+        (10, 140),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        font_scale,
+        (0, 255, 0),
+        thickness,
+        cv2.LINE_AA,
+    )
+
+
 def run_train_rl(camera_id=0, train_steps=2_000, epsilon=0.2):
     agent = QGestureAgent(epsilon=epsilon)
     cap = cv2.VideoCapture(camera_id)
@@ -148,6 +164,7 @@ def run_train_rl(camera_id=0, train_steps=2_000, epsilon=0.2):
             s = 0
             flags = (0, 0, 0, 0, 0)
             ref_id = G_TO_A["NONE"]
+            ref_name = "NONE"
 
             if result.hand_landmarks:
                 lm = result.hand_landmarks[0]
@@ -155,12 +172,24 @@ def run_train_rl(camera_id=0, train_steps=2_000, epsilon=0.2):
                 flags = finger_flags(lm)
                 s = state_from_flags(flags)
                 ref_id = reference_gesture_from_flags(flags)
+                ref_name = GESTURES[ref_id]
 
             a = agent.pick_action(s, train=True)
             if prev_s is not None:
                 r = 1.0 if prev_a == prev_ref_id else -0.05
                 agent.step(prev_s, prev_a, r, s)
 
+            draw_overlay(frame, ref_name)
+            cv2.putText(
+                frame,
+                f"step {step + 1}/{train_steps}",
+                (10, frame.shape[0] - 16),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                (200, 200, 255),
+                2,
+                cv2.LINE_AA,
+            )
             prev_s, prev_a, prev_ref_id = s, a, ref_id
             cv2.imshow("RL hand gestures (q to quit)", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
