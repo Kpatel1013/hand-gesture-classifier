@@ -31,3 +31,10 @@ def make_landmarker() -> HandLandmarker:
         min_tracking_confidence=0.6,
     )
     return HandLandmarker.create_from_options(options)
+
+
+def detect_hands(landmarker: HandLandmarker, frame_bgr: np.ndarray, timestamp_ms: int):
+    rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+    rgb = np.ascontiguousarray(rgb)
+    mp_image = Image(image_format=ImageFormat.SRGB, data=rgb)
+    return landmarker.detect_for_video(mp_image, timestamp_ms)
